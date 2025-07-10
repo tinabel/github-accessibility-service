@@ -1,0 +1,226 @@
+name: Copilot Accessibility Analysis
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+      - develop
+
+jobs:
+  copilot-accessibility:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for better diff analysis
+
+      - name: Determine base branch
+        id: base-branch
+        run: |
+          if [ "${{ github.event.pull_request.base.ref }}" = "" ]; then
+            echo "base_branch=origin/main" >> $GITHUB_OUTPUT
+          else
+            echo "base_branch=${{ github.event.pull_request.base.ref }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          BASE_BRANCH="${{ steps.base-branch.outputs.base_branch }}"
+          
+          # Get list of changed files
+          git diff --name-only $BASE_BRANCH...HEAD > changed_files.txt
+          
+          # Filter for relevant file types
+          grep -E '\.(jsx?|tsx?|vue|html)$' changed_files.txt > relevant_files.txt || true
+          
+          echo "Changed files:"
+          cat changed_files.txt
+          echo ""
+          echo "Relevant files for accessibility analysis:"
+          cat relevant_files.txt
+
+      - name: Analyze file content for accessibility issues
+        id: analyze
+        run: |
+          if [ ! -s relevant_files.txt ]; then
+            echo "No relevant files to analyze"
+            exit 0
+          fi
+          
+          echo "Analyzing files for accessibility issues..."
+          
+          # Create analysis report
+          cat > accessibility_analysis.md << 'EOF'
+          # GitHub Copilot Accessibility Analysis
+          
+          ## PR Information
+          - **PR Number:** ${{ github.event.number }}
+          - **Base Branch:** ${{ steps.base-branch.outputs.base_branch }}
+          - **Analysis Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          
+          ## Changed Files Analyzed
+          EOF
+          
+          while IFS= read -r file; do
+            if [ -f "$file" ]; then
+              echo "- \`$file\`" >> accessibility_analysis.md
+            fi
+          done < relevant_files.txt
+          
+          echo "" >> accessibility_analysis.md
+          echo "## Accessibility Analysis" >> accessibility_analysis.md
+          echo "" >> accessibility_analysis.md
+          
+          # Analyze each file for common accessibility issues
+          while IFS= read -r file; do
+            if [ -f "$file" ]; then
+              echo "### Analyzing: $file" >> accessibility_analysis.md
+              
+              # Check for common accessibility issues
+              issues_found=false
+              
+              # Check for missing alt attributes on images
+              if grep -q "<img" "$file" && ! grep -q "alt=" "$file"; then
+                echo "- ⚠️ **Missing alt attributes**: Images should have descriptive alt text" >> accessibility_analysis.md
+                issues_found=true
+              fi
+              
+              # Check for proper heading structure
+              if grep -q "<h[1-6]" "$file"; then
+                echo "- ℹ️ **Heading structure**: Verify proper heading hierarchy (h1 → h2 → h3)" >> accessibility_analysis.md
+              fi
+              
+              # Check for form labels
+              if grep -q "<input\|<select\|<textarea" "$file" && ! grep -q "label\|aria-label\|aria-labelledby" "$file"; then
+                echo "- ⚠️ **Form accessibility**: Form controls should have associated labels" >> accessibility_analysis.md
+                issues_found=true
+              fi
+              
+              # Check for semantic HTML
+              if grep -q "<div.*onclick\|<span.*onclick" "$file"; then
+                echo "- ⚠️ **Semantic HTML**: Consider using semantic elements instead of div/span with click handlers" >> accessibility_analysis.md
+                issues_found=true
+              fi
+              
+              # Check for color contrast (basic check)
+              if grep -q "color.*#[0-9a-fA-F]\{3,6\}" "$file"; then
+                echo "- ℹ️ **Color contrast**: Verify sufficient color contrast ratios (4.5:1 for normal text)" >> accessibility_analysis.md
+              fi
+              
+              if [ "$issues_found" = false ]; then
+                echo "- ✅ No obvious accessibility issues detected" >> accessibility_analysis.md
+              fi
+              
+              echo "" >> accessibility_analysis.md
+            fi
+          done < relevant_files.txt
+          
+          # Add recommendations section
+          cat >> accessibility_analysis.md << 'EOF'
+          ## Recommendations
+          
+          ### WCAG 2.1 Guidelines to Follow:
+          1. **Perceivable**: Ensure content is perceivable by all users
+          2. **Operable**: Make functionality operable via keyboard and other input methods
+          3. **Understandable**: Make content and operation understandable
+          4. **Robust**: Ensure compatibility with assistive technologies
+          
+          ### WAI-ARIA Best Practices:
+          - Use semantic HTML elements when possible
+          - Add ARIA attributes only when necessary
+          - Ensure ARIA attributes are properly supported
+          - Test with screen readers
+          
+          ### Testing Checklist:
+          - [ ] Keyboard navigation works
+          - [ ] Screen reader compatibility
+          - [ ] Color contrast meets WCAG standards
+          - [ ] Focus indicators are visible
+          - [ ] Form labels are properly associated
+          - [ ] Images have descriptive alt text
+          - [ ] Headings follow logical hierarchy
+          
+          ---
+          *This analysis is automated and should be supplemented with manual testing and user feedback.*
+          EOF
+
+      - name: Comment PR with accessibility analysis
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            try {
+              const analysis = fs.readFileSync('accessibility_analysis.md', 'utf8');
+              
+              // Convert markdown to GitHub comment format
+              const comment = analysis
+                .replace(/^# (.*$)/gim, '**$1**')
+                .replace(/^## (.*$)/gim, '**$1**')
+                .replace(/^### (.*$)/gim, '**$1**')
+                .replace(/^- ⚠️ (.*$)/gim, '⚠️ $1')
+                .replace(/^- ℹ️ (.*$)/gim, 'ℹ️ $1')
+                .replace(/^- ✅ (.*$)/gim, '✅ $1')
+                .replace(/^- \[ \] (.*$)/gim, '- [ ] $1')
+                .replace(/`(.*?)`/g, '`$1`');
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+              
+              console.log('Accessibility analysis comment posted successfully');
+            } catch (error) {
+              console.error('Error posting accessibility analysis:', error);
+            }
+
+      - name: Upload analysis report
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-accessibility-analysis
+          path: |
+            accessibility_analysis.md
+            changed_files.txt
+            relevant_files.txt
+
+      - name: Create accessibility summary
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            try {
+              const analysis = fs.readFileSync('accessibility_analysis.md', 'utf8');
+              const issues = (analysis.match(/⚠️/g) || []).length;
+              const info = (analysis.match(/ℹ️/g) || []).length;
+              const passed = (analysis.match(/✅/g) || []).length;
+              
+              const summary = `🤖 **Copilot Accessibility Summary**
+              
+              **Issues Found:** ${issues} ⚠️
+              **Recommendations:** ${info} ℹ️
+              **Files Passed:** ${passed} ✅
+              
+              [View full analysis](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`;
+              
+              // Add summary as a separate comment
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: summary
+              });
+            } catch (error) {
+              console.log('Error creating summary:', error);
+            } 

@@ -1,334 +1,253 @@
-# GitHub Service - Auto-Running PR Workflows
+# GitHub Accessibility Service
 
-This repository demonstrates how to set up automated services that run when Pull Requests are created on GitHub. The workflows include comprehensive testing, security scanning, deployment previews, and automated dependency management.
+**Automated accessibility evaluation for GitHub repositories with MCP server integration and AI assistant support**
 
-## 🚀 Features
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+[![WCAG 2.1](https://img.shields.io/badge/WCAG-2.1%20AA-green.svg)](https://www.w3.org/WAI/WCAG21/)
 
-- **Automated PR Checks**: Linting, testing, and build verification
-- **Deployment Previews**: Automatic preview deployments for each PR
-- **Security Scanning**: Vulnerability detection and license compliance
-- **Performance Testing**: Lighthouse CI integration
-- **Accessibility Testing**: Automated a11y checks
-- **GitHub Copilot Integration**: AI-powered accessibility analysis
-- **Dependency Management**: Automated updates and security fixes
+## 🎯 Overview
 
-## 📁 Workflow Structure
+This repository provides a complete accessibility evaluation solution that integrates with your existing GitHub workflow and AI assistants. Get automated WCAG 2.1 compliance checking, educational feedback, and actionable recommendations for every pull request.
+
+## ✨ Key Features
+
+- **🤖 Automated PR Analysis**: GitHub Actions workflow that analyzes every pull request
+- **🧠 AI Assistant Integration**: Works with Claude Desktop, VS Code, Cursor, and other MCP-compatible tools
+- **📚 Educational Feedback**: Not just issue detection—learn why accessibility matters
+- **🎯 WCAG 2.1 Compliance**: Comprehensive A, AA, AAA level checking
+- **⚡ One-Command Setup**: Get everything running in minutes
+- **🔧 Highly Customizable**: Adapt to your team's needs and standards
+
+## 🚀 Quick Start
+
+### Option 1: Automated Setup (Recommended)
+
+```bash
+# Clone the repository
+git clone https://github.com/your-org/github-accessibility-service.git
+cd github-accessibility-service
+
+# One-command setup
+./setup.sh
+
+# Verify installation
+./verify-installation.sh
+```
+
+### Option 2: Download Release Package
+
+```bash
+# Download latest release
+curl -L -o github-accessibility-service.tar.gz \
+  https://github.com/your-org/github-accessibility-service/releases/latest/download/github-accessibility-service.tar.gz
+
+# Extract and setup
+tar -xzf github-accessibility-service.tar.gz
+cd github-accessibility-service
+./setup.sh
+```
+
+## 🛠️ What Gets Set Up
+
+### GitHub Actions Integration
+- **Automated PR analysis** with accessibility evaluation
+- **Educational comments** on pull requests with detailed explanations
+- **WCAG compliance scoring** and recommendations
+- **Artifact storage** for detailed analysis reports
+
+### MCP Accessibility Evaluator
+- **Real-time analysis** for AI assistants
+- **4 powerful tools**: `evaluate_accessibility`, `check_wcag_compliance`, `validate_aria`, `fetch_accessibility_docs`
+- **Educational explanations** for every accessibility issue found
+- **Live documentation** from W3C and MDN standards
+
+### AI Assistant Support
+- **Claude Desktop**: Full MCP integration with enhanced explanations
+- **VS Code/Cursor**: Real-time accessibility checking during development
+- **GitHub Copilot**: Integration for automated accessibility analysis
+- **Custom AI tools**: Works with any MCP-compatible assistant
+
+## 📊 Example Analysis Output
+
+When you create a PR with accessibility issues, you'll get feedback like this:
+
+```markdown
+🤖 Accessibility Analysis Report
+
+## 📄 Button.tsx
+
+🚨 **Missing Alt Text** (WCAG 1.1.1)
+   Images must have alternative text for screen readers
+   **Impact**: Critical - Blocks access for vision-impaired users
+   **Fix**: Add descriptive alt="..." attributes to all images
+
+⚠️ **Non-semantic Interactive Elements** (WCAG 2.1.1)
+   Use semantic HTML elements for interactive content
+   **Impact**: Moderate - Affects keyboard navigation and screen readers
+   **Fix**: Use <button> or <a> elements instead of div/span with click handlers
+
+## 🎓 Accessibility Education
+
+### Why Accessibility Matters
+- **1 in 4 adults** in the US has a disability that impacts daily activities
+- **Web accessibility benefits everyone**, not just users with disabilities
+- **Legal compliance** is required in many jurisdictions
+```
+
+## 🧪 Testing Your Setup
+
+### Test GitHub Actions
+Create a test PR with accessibility issues:
+
+```bash
+echo '<img src="test.jpg"><button><i class="icon"></i></button>' > test.html
+git add test.html
+git commit -m "Test accessibility analysis"
+git push origin feature-branch
+# Create PR and check for accessibility analysis comment
+```
+
+### Test MCP Server
+Ask your configured AI assistant:
 
 ```
-.github/workflows/
-├── pr-check.yml              # Basic PR checks (lint, test, build)
-├── pr-deploy-preview.yml     # Deployment previews and advanced testing
-├── dependency-updates.yml    # Automated dependency management
-└── copilot-accessibility.yml # GitHub Copilot accessibility analysis
+Use evaluate_accessibility to check this HTML:
+<html><body><img src="logo.png"><button><i class="icon"></i></button></body></html>
 ```
 
-## 🛠️ Setup Instructions
+## 📚 Documentation
 
-### 1. Repository Configuration
+- **[Setup Guide](SETUP_GUIDE.md)**: Detailed installation and configuration
+- **[Distribution Guide](docs/distribution/DISTRIBUTOR_GUIDE.md)**: For organizations and teams
+- **[MCP Evaluator Documentation](mcp-accessibility-evaluator/README.md)**: Technical details and API
+- **[GitHub Copilot Setup](COPILOT_SETUP.md)**: Advanced GitHub integration
 
-1. **Enable GitHub Actions**: Go to your repository Settings → Actions → General and ensure "Allow all actions and reusable workflows" is selected.
+## 🏢 For Organizations
 
-2. **Set up Branch Protection** (Recommended):
-   - Go to Settings → Branches
-   - Add rule for `main` and `develop` branches
-   - Enable "Require status checks to pass before merging"
-   - Select the required status checks from the workflows below
+### Easy Distribution
+This package is designed for easy distribution across teams and organizations:
 
-### 2. Required Secrets
+- **One-command installation** for any repository
+- **Customizable templates** for your organization's standards
+- **Automated setup scripts** for enterprise deployment
+- **Comprehensive documentation** for different audiences
 
-Add these secrets in your repository Settings → Secrets and variables → Actions:
+### Enterprise Features
+- **Custom accessibility rules** for your brand guidelines
+- **WCAG compliance reporting** for auditing
+- **Multi-repository deployment** scripts
+- **Training and educational content** for development teams
 
-| Secret Name         | Description                         | Required For        |
-| ------------------- | ----------------------------------- | ------------------- |
-| `GITHUB_TOKEN`      | Automatically provided by GitHub    | All workflows       |
-| `SNYK_TOKEN`        | Snyk security scanning              | Security scanning   |
-| `VERCEL_TOKEN`      | Vercel deployment (if using Vercel) | Deployment previews |
-| `TEST_DATABASE_URL` | Test database connection string     | Integration tests   |
+See the [Distribution Guide](docs/distribution/DISTRIBUTOR_GUIDE.md) for details.
 
-### 3. Package.json Scripts
+## 🔧 Customization
 
-Ensure your `package.json` includes these scripts:
+### Workflow Configuration
+Customize the GitHub Actions workflow for your needs:
+
+```yaml
+# .github/workflows/copilot-accessibility.yml
+env:
+  WCAG_TARGET_LEVEL: 'AA'  # A, AA, or AAA
+  FAIL_ON_ERRORS: 'false'  # Set to 'true' to fail CI on errors
+  ANALYSIS_PATTERNS: '\.(jsx?|tsx?|vue|html|svelte)$'
+```
+
+### MCP Server Configuration
+Customize the MCP server for your AI assistant:
 
 ```json
 {
-  "scripts": {
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "type-check": "tsc --noEmit",
-    "test": "jest",
-    "test:coverage": "jest --coverage",
-    "test:integration": "jest --config jest.integration.config.js",
-    "test:a11y": "pa11y-ci",
-    "build": "next build",
-    "security:check": "npm audit --audit-level=moderate"
+  "mcpServers": {
+    "accessibility-evaluator": {
+      "command": "node",
+      "args": ["/path/to/mcp-accessibility-evaluator/dist/index.js"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
   }
 }
 ```
 
-### 4. Configuration Files
+## 🔄 Updates and Releases
 
-#### ESLint Configuration (`.eslintrc.js`)
+### Stay Updated
+```bash
+# For git-based installations
+git pull origin main
+./setup.sh
 
-```javascript
-module.exports = {
-  extends: ["next/core-web-vitals", "@typescript-eslint/recommended"],
-  rules: {
-    // Your custom rules
-  },
-};
+# For package-based installations
+# Download latest release and re-extract
 ```
 
-#### Jest Configuration (`jest.config.js`)
-
-```javascript
-module.exports = {
-  testEnvironment: "jsdom",
-  setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
-  collectCoverageFrom: ["src/**/*.{js,jsx,ts,tsx}", "!src/**/*.d.ts"],
-};
+### Create Custom Releases
+```bash
+# For organizations distributing internally
+npm run distribution:package
+# Creates github-accessibility-service.tar.gz
 ```
 
-#### Lighthouse CI Configuration (`.lighthouserc.js`)
+## 📈 Benefits
 
-```javascript
-module.exports = {
-  ci: {
-    collect: {
-      url: ["http://localhost:3000"],
-      startServerCommand: "npm run start",
-    },
-    assert: {
-      assertions: {
-        "categories:performance": ["warn", { minScore: 0.8 }],
-        "categories:accessibility": ["error", { minScore: 0.9 }],
-      },
-    },
-  },
-};
-```
+### For Developers
+- **Learn while coding**: Educational feedback helps improve accessibility knowledge
+- **Catch issues early**: Problems identified before production
+- **Consistent standards**: Automated checking ensures compliance
+- **AI assistance**: Get help with accessibility during development
 
-## 🔄 Workflow Triggers
+### For Teams
+- **Standardized process**: Same accessibility checking across all projects
+- **Reduced review time**: Automated analysis catches common issues
+- **Knowledge sharing**: Educational content helps entire team learn
+- **Compliance tracking**: Monitor WCAG compliance across projects
 
-### PR Check Workflow (`pr-check.yml`)
+### For Organizations
+- **Scale expertise**: Accessibility knowledge available to all teams
+- **Risk reduction**: Catch accessibility issues before release
+- **Compliance assurance**: Meet legal and regulatory requirements
+- **Cost savings**: Automated checking reduces manual review needs
 
-- **Triggers**: PR opened, synchronized, or reopened
-- **Branches**: `main`, `develop`
-- **Jobs**:
-  - Linting and code quality
-  - Unit tests with coverage
-  - Build verification
-  - Security audit
-  - Integration tests (for main branch PRs)
+## 🎯 Standards Compliance
 
-### Deployment Preview Workflow (`pr-deploy-preview.yml`)
-
-- **Triggers**: PR opened, synchronized, or reopened
-- **Branches**: `main`, `develop`
-- **Jobs**:
-  - Docker image build and push
-  - Preview deployment
-  - Performance testing (Lighthouse CI)
-  - Accessibility testing
-
-### Dependency Updates Workflow (`dependency-updates.yml`)
-
-- **Triggers**: PR events + weekly schedule (Sundays 2 AM UTC)
-- **Jobs**:
-  - Automated dependency updates
-  - Security scanning (Snyk + CodeQL)
-  - License compliance checking
-
-### Copilot Accessibility Workflow (`copilot-accessibility.yml`)
-
-- **Triggers**: PR opened, synchronized, or reopened
-- **Branches**: `main`, `develop`
-- **Jobs**:
-  - AI-powered accessibility analysis
-  - WCAG 2.1 compliance checking
-  - WAI-ARIA best practices validation
-  - Automated PR comments with findings
-
-## 🤖 GitHub Copilot Integration
-
-### How Copilot Accessibility Analysis Works
-
-The Copilot accessibility workflow automatically analyzes your PR changes for accessibility issues based on WCAG 2.1 guidelines and WAI-ARIA best practices.
-
-#### What It Checks:
-
-1. **Missing Alt Attributes**: Images without descriptive alt text
-2. **Form Accessibility**: Form controls without proper labels
-3. **Semantic HTML**: Non-semantic elements used for interactive purposes
-4. **Heading Structure**: Proper heading hierarchy
-5. **Color Contrast**: Basic color contrast validation
-6. **ARIA Attributes**: Proper usage of WAI-ARIA attributes
-
-#### How to Use:
-
-1. **Automatic Analysis**: The workflow runs automatically on every PR
-2. **PR Comments**: Copilot posts detailed analysis as PR comments
-3. **Summary Report**: Quick overview of issues found and recommendations
-4. **Artifact Downloads**: Full analysis reports available as workflow artifacts
-
-#### Example Copilot Comment:
-
-```
-🤖 GitHub Copilot Accessibility Analysis
-
-PR Information
-- PR Number: 123
-- Base Branch: origin/main
-- Analysis Date: 2024-01-15 10:30:00 UTC
-
-Changed Files Analyzed
-- `src/components/Button.tsx`
-- `src/pages/Home.tsx`
-
-Accessibility Analysis
-
-Analyzing: src/components/Button.tsx
-- ⚠️ Missing alt attributes: Images should have descriptive alt text
-- ℹ️ Heading structure: Verify proper heading hierarchy (h1 → h2 → h3)
-
-Analyzing: src/pages/Home.tsx
-- ✅ No obvious accessibility issues detected
-
-Recommendations
-
-WCAG 2.1 Guidelines to Follow:
-1. Perceivable: Ensure content is perceivable by all users
-2. Operable: Make functionality operable via keyboard and other input methods
-3. Understandable: Make content and operation understandable
-4. Robust: Ensure compatibility with assistive technologies
-```
-
-### Customizing Copilot Analysis
-
-You can customize the accessibility checks by modifying the `copilot-accessibility.yml` workflow:
-
-```yaml
-# Add custom accessibility rules
-- name: Custom accessibility check
-  run: |
-    # Your custom accessibility validation logic
-    echo "Running custom accessibility checks..."
-```
-
-## 🎯 Customization
-
-### Adding Custom Checks
-
-1. **Create a new workflow file** in `.github/workflows/`
-2. **Define triggers** using the `on` section
-3. **Add jobs** with specific steps
-4. **Configure permissions** if needed
-
-Example custom workflow:
-
-```yaml
-name: Custom PR Check
-
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-
-jobs:
-  custom-check:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run custom script
-        run: |
-          echo "Running custom check..."
-          # Your custom logic here
-```
-
-### Environment-Specific Workflows
-
-Create separate workflows for different environments:
-
-```yaml
-# .github/workflows/staging-deploy.yml
-name: Deploy to Staging
-
-on:
-  pull_request:
-    types: [closed]
-    branches: [develop]
-
-jobs:
-  deploy-staging:
-    if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
-    steps:
-      # Deployment steps for staging
-```
-
-## 📊 Monitoring and Notifications
-
-### Status Badges
-
-Add these badges to your README:
-
-```markdown
-![PR Checks](https://github.com/{owner}/{repo}/workflows/PR%20Checks/badge.svg)
-![Deployment Preview](https://github.com/{owner}/{repo}/workflows/PR%20Deployment%20Preview/badge.svg)
-![Dependency Updates](https://github.com/{owner}/{repo}/workflows/Dependency%20Updates%20%26%20Security/badge.svg)
-```
-
-### Slack/Discord Notifications
-
-Add notification steps to your workflows:
-
-```yaml
-- name: Notify Slack
-  uses: 8398a7/action-slack@v3
-  with:
-    status: ${{ job.status }}
-    channel: "#deployments"
-    webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-```
-
-## 🔧 Troubleshooting
-
-### Common Issues
-
-1. **Workflow not triggering**:
-
-   - Check branch protection rules
-   - Verify workflow file syntax
-   - Ensure workflows are in `.github/workflows/` directory
-
-2. **Permission errors**:
-
-   - Review workflow permissions
-   - Check repository settings
-   - Verify secret names and values
-
-3. **Build failures**:
-   - Check package.json scripts
-   - Verify Node.js version compatibility
-   - Review dependency installation
-
-### Debug Mode
-
-Enable debug logging by setting the secret `ACTIONS_STEP_DEBUG` to `true` in your repository settings.
-
-## 📚 Additional Resources
-
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [GitHub Actions Workflow Syntax](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions)
-- [GitHub Actions Examples](https://github.com/actions/starter-workflows)
+- **WCAG 2.1**: Full support for A, AA, AAA levels
+- **WAI-ARIA**: Complete validation and best practices
+- **Section 508**: US federal accessibility standards
+- **EN 301 549**: European accessibility standards
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+We welcome contributions! Please see our [contribution guidelines](CONTRIBUTING.md) for details.
 
-## 📄 License
+### Ways to Contribute
+- **Bug reports** and feature requests
+- **New accessibility rules** and checks
+- **Documentation** improvements
+- **Platform support** enhancements
+- **Educational content** and examples
+
+## 📜 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🌟 Acknowledgments
+
+- **W3C Web Accessibility Initiative** for WCAG guidelines
+- **axe-core team** for accessibility testing engine
+- **MCP Protocol** for AI assistant integration
+- **Open source accessibility community** for inspiration and guidance
+
+## 📞 Support
+
+- **Documentation**: [Setup Guide](SETUP_GUIDE.md) and [Wiki](https://github.com/your-org/github-accessibility-service/wiki)
+- **Issues**: [GitHub Issues](https://github.com/your-org/github-accessibility-service/issues) for bug reports
+- **Discussions**: [GitHub Discussions](https://github.com/your-org/github-accessibility-service/discussions) for questions
+- **Community**: Join our accessibility-focused development community
+
+---
+
+**Building a more accessible web, one repository at a time.** 🌟
+
+*Ready to make your projects more accessible? [Get started now](#-quick-start) with our one-command setup!*

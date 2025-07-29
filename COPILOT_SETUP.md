@@ -1,18 +1,27 @@
-# GitHub Copilot Accessibility Analysis Setup
+# GitHub Copilot & MCP Accessibility Analysis Setup
 
 ## 🎯 Overview
 
-This guide explains how to set up GitHub Copilot to automatically run accessibility analysis when Pull Requests are created. The system analyzes code changes against WCAG 2.1 guidelines and WAI-ARIA best practices.
+This guide explains how to set up automated accessibility analysis for your projects using:
 
-## 🚀 Quick Setup
+1. **GitHub Actions** - Automated PR analysis with GitHub Copilot
+2. **MCP Accessibility Evaluator** - Advanced local analysis with AI assistants (Claude, Copilot, etc.)
 
-### 1. Enable GitHub Actions
+Both approaches analyze code against WCAG 2.1 guidelines, WAI-ARIA best practices, and MDN accessibility standards.
+
+## 🚀 Quick Setup Options
+
+### Option 1: GitHub Actions (Automated PR Analysis)
+
+Automatically runs accessibility checks when Pull Requests are created.
+
+#### 1. Enable GitHub Actions
 
 1. Go to your repository Settings → Actions → General
 2. Select "Allow all actions and reusable workflows"
 3. Save the changes
 
-### 2. Add Required Secrets
+#### 2. Add Required Secrets
 
 In your repository Settings → Secrets and variables → Actions, add:
 
@@ -21,16 +30,79 @@ In your repository Settings → Secrets and variables → Actions, add:
 | `GITHUB_TOKEN` | Automatically provided | ✅ Yes |
 | `COPILOT_ACCESS_TOKEN` | GitHub Copilot API token | ⚠️ Optional |
 
-### 3. Configure Branch Protection
+#### 3. Configure Branch Protection
 
 1. Go to Settings → Branches
 2. Add rule for `main` and `develop` branches
 3. Enable "Require status checks to pass before merging"
 4. Add the Copilot accessibility check to required status checks
 
+### Option 2: MCP Accessibility Evaluator (Local AI Analysis)
+
+Use with AI assistants like Claude Desktop or GitHub Copilot for real-time accessibility evaluation.
+
+#### 1. Install MCP Server
+
+```bash
+# Clone or copy the MCP accessibility evaluator
+cd mcp-accessibility-evaluator
+npm install
+npm run build
+```
+
+#### 2. Configure Your AI Assistant
+
+**For Claude Desktop:**
+
+Edit your Claude configuration file (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "accessibility-evaluator": {
+      "command": "node",
+      "args": ["/path/to/mcp-accessibility-evaluator/dist/index.js"]
+    }
+  }
+}
+```
+
+**For GitHub Copilot (via VS Code):**
+
+Install the MCP extension and configure in VS Code settings:
+
+```json
+{
+  "mcp.servers": {
+    "accessibility-evaluator": {
+      "command": "node",
+      "args": ["/path/to/mcp-accessibility-evaluator/dist/index.js"]
+    }
+  }
+}
+```
+
+#### 3. Use MCP Tools
+
+Once configured, you can use these commands with your AI assistant:
+
+```
+# Evaluate HTML content
+Use evaluate_accessibility to check this HTML: <html>...</html>
+
+# Check WCAG compliance
+Check WCAG AA compliance for https://example.com
+
+# Validate ARIA usage
+Validate ARIA attributes in my component file
+
+# Fetch latest documentation
+Fetch accessibility documentation from W3C and MDN
+```
+
 ## 🔧 How It Works
 
-### Workflow Triggers
+### GitHub Actions Workflow
 
 The `copilot-accessibility.yml` workflow automatically runs when:
 
@@ -39,29 +111,54 @@ The `copilot-accessibility.yml` workflow automatically runs when:
 - ✅ PR is reopened
 - ✅ Target branches: `main`, `develop`
 
-### Analysis Process
+### MCP Server Tools
 
-1. **File Detection**: Identifies changed files in the PR
-2. **Content Analysis**: Scans for accessibility issues
-3. **Report Generation**: Creates detailed analysis report
-4. **PR Comment**: Posts findings as PR comment
-5. **Artifact Upload**: Saves full report for download
+The MCP accessibility evaluator provides four main tools:
 
-### What Copilot Checks
+1. **`evaluate_accessibility`** - Comprehensive accessibility evaluation
+   - Checks images for alt text
+   - Validates heading structure
+   - Ensures form controls have labels
+   - Runs axe-core checks
+
+2. **`check_wcag_compliance`** - WCAG 2.1 compliance checking
+   - Determines compliance level (A, AA, AAA)
+   - Provides detailed compliance report
+   - Generates specific recommendations
+
+3. **`validate_aria`** - ARIA usage validation
+   - Validates ARIA roles and attributes
+   - Checks parent-child relationships
+   - Detects redundant or invalid ARIA
+
+4. **`fetch_accessibility_docs`** - Documentation retrieval
+   - Fetches latest W3C WCAG guidelines
+   - Retrieves ARIA specifications
+   - Gets MDN accessibility guides
+
+### What Gets Checked
 
 #### ⚠️ Critical Issues (Will Block PR)
+
 - Missing `alt` attributes on images
 - Form controls without labels
 - Non-semantic HTML for interactive elements
 - Missing ARIA attributes where required
+- Invalid ARIA roles or properties
+- Skipped heading levels
+- Hidden focusable elements
 
 #### ℹ️ Recommendations (Warnings)
+
 - Heading hierarchy issues
 - Color contrast concerns
 - Keyboard navigation improvements
 - Screen reader compatibility
+- Redundant ARIA roles
+- Empty ARIA attributes
 
 #### ✅ Best Practices
+
 - Semantic HTML usage
 - Proper ARIA implementation
 - WCAG 2.1 compliance
@@ -69,7 +166,7 @@ The `copilot-accessibility.yml` workflow automatically runs when:
 
 ## 📋 Example Analysis Output
 
-When you create a PR, Copilot will post a comment like this:
+### GitHub Actions PR Comment
 
 ```
 🤖 GitHub Copilot Accessibility Analysis
@@ -93,26 +190,57 @@ Analyzing: src/pages/Home.tsx
 - ✅ No obvious accessibility issues detected
 
 Recommendations
+...
+```
 
-WCAG 2.1 Guidelines to Follow:
-1. Perceivable: Ensure content is perceivable by all users
-2. Operable: Make functionality operable via keyboard and other input methods
-3. Understandable: Make content and operation understandable
-4. Robust: Ensure compatibility with assistive technologies
+### MCP Analysis Output
 
-Testing Checklist:
-- [ ] Keyboard navigation works
-- [ ] Screen reader compatibility
-- [ ] Color contrast meets WCAG standards
-- [ ] Focus indicators are visible
-- [ ] Form labels are properly associated
-- [ ] Images have descriptive alt text
-- [ ] Headings follow logical hierarchy
+```json
+{
+  "issues": [
+    {
+      "type": "error",
+      "rule": "WCAG 1.1.1",
+      "message": "Images must have alternative text",
+      "element": "<img src=\"logo.png\">",
+      "selector": "img",
+      "standard": "WCAG",
+      "level": "A",
+      "impact": "critical"
+    }
+  ],
+  "summary": {
+    "totalIssues": 1,
+    "errors": 1,
+    "warnings": 0,
+    "byStandard": { "WCAG": 1 },
+    "byImpact": { "critical": 1 }
+  },
+  "passedChecks": ["WCAG: headings-structure", "WCAG: form-labels"]
+}
 ```
 
 ## 🛠️ Customization
 
-### Adding Custom Rules
+### Adding Custom Rules to MCP
+
+Create custom accessibility rules by extending the evaluator:
+
+```typescript
+// custom-rules.ts
+export function checkCustomRule($: CheerioAPI): AccessibilityIssue[] {
+  const issues: AccessibilityIssue[] = [];
+  
+  // Your custom logic here
+  $('button').each((_, element) => {
+    // Check for specific patterns
+  });
+  
+  return issues;
+}
+```
+
+### Modifying GitHub Actions Workflow
 
 Edit the `copilot-accessibility.yml` workflow to add custom checks:
 
@@ -128,101 +256,106 @@ Edit the `copilot-accessibility.yml` workflow to add custom checks:
     fi
 ```
 
-### Modifying File Types
-
-Change which files are analyzed by modifying the grep pattern:
+### Using MCP with Different File Types
 
 ```bash
-# Current: Only JS/TS/React files
-grep -E '\.(jsx?|tsx?|vue|html)$' changed_files.txt
+# Evaluate local HTML file
+Use evaluate_accessibility with the HTML from ./src/components/MyComponent.html
 
-# Custom: Add more file types
-grep -E '\.(jsx?|tsx?|vue|html|css|scss)$' changed_files.txt
-```
+# Check built application
+Check WCAG compliance for http://localhost:3000
 
-### Custom Severity Levels
-
-Modify the analysis to use different severity levels:
-
-```bash
-# Critical issues (block PR)
-echo "- 🚨 **Critical**: $issue" >> accessibility_analysis.md
-
-# Warnings (allow PR)
-echo "- ⚠️ **Warning**: $issue" >> accessibility_analysis.md
-
-# Info (suggestions)
-echo "- ℹ️ **Info**: $issue" >> accessibility_analysis.md
+# Validate multiple files
+Validate ARIA usage in all files in ./src/components/
 ```
 
 ## 🔍 Testing the Setup
 
-### 1. Create a Test PR
+### Testing GitHub Actions
 
-1. Create a new branch: `git checkout -b test-accessibility`
-2. Make some changes to trigger accessibility issues
-3. Push and create a PR
-4. Check the Actions tab for the Copilot workflow
+1. Create a test PR with accessibility issues
+2. Verify workflow runs automatically
+3. Check PR comment for analysis results
+4. Download artifacts for full report
 
-### 2. Verify Analysis
+### Testing MCP Server
 
-Look for:
-- ✅ Workflow runs automatically
-- ✅ PR comment is posted
-- ✅ Analysis artifacts are uploaded
-- ✅ Issues are correctly identified
+```bash
+# 1. Run tests
+cd mcp-accessibility-evaluator
+npm test
 
-### 3. Test Different Scenarios
+# 2. Test with example HTML
+Use evaluate_accessibility with the HTML from ./examples/test-page.html
 
-- **Good code**: Should show ✅ passes
-- **Missing alt text**: Should show ⚠️ warning
-- **Form without labels**: Should show ⚠️ warning
-- **Non-semantic HTML**: Should show ⚠️ warning
+# 3. Verify all tools work
+- Evaluate a sample page
+- Check WCAG compliance 
+- Validate ARIA usage
+- Fetch documentation
+```
 
 ## 🚨 Troubleshooting
 
-### Workflow Not Running
+### GitHub Actions Issues
 
-1. **Check branch protection**: Ensure workflows can run
-2. **Verify file location**: Workflow must be in `.github/workflows/`
-3. **Check syntax**: Validate YAML syntax
-4. **Review permissions**: Ensure proper permissions are set
+| Problem | Solution |
+|---------|----------|
+| Workflow not running | Check branch protection and permissions |
+| No comments posted | Verify `pull-requests: write` permission |
+| False positives | Customize grep patterns and rules |
 
-### No Comments Posted
+### MCP Server Issues
 
-1. **Check permissions**: Workflow needs `pull-requests: write`
-2. **Verify token**: Ensure `GITHUB_TOKEN` is available
-3. **Check logs**: Review workflow logs for errors
-
-### False Positives
-
-1. **Customize rules**: Modify the grep patterns
-2. **Add exceptions**: Create allowlist for specific cases
-3. **Adjust severity**: Change warning levels as needed
+| Problem | Solution |
+|---------|----------|
+| Server not connecting | Check path in configuration |
+| Tools not available | Verify server is running |
+| Type errors | Run `npm install` to get dependencies |
+| No results | Check HTML format and content |
 
 ## 📚 Resources
 
 ### Documentation
+
 - [WCAG 2.1 Guidelines](https://www.w3.org/WAI/standards-guidelines/wcag/docs/)
 - [WAI-ARIA Best Practices](https://www.w3.org/TR/wai-aria/)
 - [MDN Accessibility Guide](https://developer.mozilla.org/en-US/docs/Web/Accessibility/Guides)
-- [Material-UI Accessibility](https://mui.com/material-ui/getting-started/)
+- [ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/)
 
 ### Tools
+
+- [MCP SDK Documentation](https://github.com/anthropics/model-context-protocol)
 - [axe-core](https://github.com/dequelabs/axe-core) - Accessibility testing library
 - [pa11y](https://pa11y.org/) - Automated accessibility testing
 - [Lighthouse](https://developers.google.com/web/tools/lighthouse) - Performance and accessibility auditing
 
+### MCP Accessibility Evaluator
+
+- Location: `./mcp-accessibility-evaluator/`
+- Tests: Run `npm test` for comprehensive test suite
+- Documentation: See `./mcp-accessibility-evaluator/README.md`
+
 ## 🤝 Contributing
 
-To improve the Copilot accessibility analysis:
+To improve the accessibility analysis tools:
 
 1. Fork the repository
 2. Create a feature branch
 3. Add new accessibility checks
-4. Test with various scenarios
+4. Write tests for new features
 5. Submit a pull request
+
+### Contributing to MCP Server
+
+```bash
+cd mcp-accessibility-evaluator
+npm install
+npm test
+# Make your changes
+npm run test:coverage
+```
 
 ## 📄 License
 
-This setup is provided under the MIT License. Feel free to modify and adapt for your needs. 
+This setup is provided under the MIT License. Feel free to modify and adapt for your needs.

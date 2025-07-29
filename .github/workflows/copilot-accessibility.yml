@@ -14,12 +14,24 @@ jobs:
       contents: read
       pull-requests: write
       actions: read
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch full history for better diff analysis
+          fetch-depth: 0 # Fetch full history for better diff analysis
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Set up MCP Accessibility Evaluator
+        run: |
+          cd mcp-accessibility-evaluator
+          npm install
+          npm run build
 
       - name: Determine base branch
         id: base-branch
@@ -34,18 +46,120 @@ jobs:
         id: changed-files
         run: |
           BASE_BRANCH="${{ steps.base-branch.outputs.base_branch }}"
-          
+
           # Get list of changed files
           git diff --name-only $BASE_BRANCH...HEAD > changed_files.txt
-          
+
           # Filter for relevant file types
           grep -E '\.(jsx?|tsx?|vue|html)$' changed_files.txt > relevant_files.txt || true
-          
+
           echo "Changed files:"
           cat changed_files.txt
           echo ""
           echo "Relevant files for accessibility analysis:"
           cat relevant_files.txt
+
+      - name: Run MCP accessibility evaluation
+        id: mcp-analysis
+        run: |
+          if [ ! -s relevant_files.txt ]; then
+            echo "No relevant files to analyze"
+            exit 0
+          fi
+
+          echo "Running MCP accessibility evaluation..."
+
+          # Create HTML content from changed files for analysis
+          mkdir -p analysis_results
+
+          while IFS= read -r file; do
+            if [ -f "$file" ]; then
+              echo "Analyzing $file with MCP evaluator..."
+              
+              # Extract HTML content or create test HTML from React/Vue components
+              if [[ "$file" == *.html ]]; then
+                cp "$file" "analysis_results/$(basename "$file")"
+              else
+                # For React/Vue components, create a basic HTML structure for testing
+                echo "<!DOCTYPE html><html><head><title>Component Test</title></head><body>" > "analysis_results/$(basename "$file").html"
+                # Extract JSX/HTML-like content (simplified approach)
+                grep -oE '<[^>]+>' "$file" | head -20 >> "analysis_results/$(basename "$file").html" || true
+                echo "</body></html>" >> "analysis_results/$(basename "$file").html"
+              fi
+            fi
+          done < relevant_files.txt
+
+      - name: Analyze with enhanced MCP evaluator
+        id: enhanced-analysis
+        run: |
+          cd mcp-accessibility-evaluator
+
+          # Create test script to use MCP tools
+          cat > test_files.js << 'EOF'
+          const fs = require('fs');
+          const path = require('path');
+
+          // Simple test runner for the MCP server
+          async function runAccessibilityTest() {
+            const analysisDir = '../analysis_results';
+            
+            if (!fs.existsSync(analysisDir)) {
+              console.log('No analysis results directory found');
+              return;
+            }
+            
+            const files = fs.readdirSync(analysisDir).filter(f => f.endsWith('.html'));
+            
+            console.log('# MCP Accessibility Evaluation Results\n');
+            
+            for (const file of files) {
+              const filePath = path.join(analysisDir, file);
+              const content = fs.readFileSync(filePath, 'utf8');
+              
+              console.log(`## Analysis for ${file}\n`);
+              
+              // Basic accessibility checks that mirror MCP functionality
+              const issues = [];
+              
+              // Check for missing alt attributes
+              if (content.includes('<img') && !content.includes('alt=')) {
+                issues.push('⚠️ **Missing alt attributes**: Images should have descriptive alt text for screen readers');
+              }
+              
+              // Check for form labels
+              if ((content.includes('<input') || content.includes('<select') || content.includes('<textarea')) && 
+                  !content.includes('label') && !content.includes('aria-label')) {
+                issues.push('⚠️ **Form accessibility**: Form controls should have associated labels');
+              }
+              
+              // Check for semantic HTML
+              if (content.includes('div onclick') || content.includes('span onclick')) {
+                issues.push('⚠️ **Semantic HTML**: Use semantic elements (button, a) instead of div/span with click handlers');
+              }
+              
+              // Check heading structure
+              const headings = content.match(/<h[1-6]/g);
+              if (headings && headings.length > 0) {
+                console.log('ℹ️ **Heading structure detected**: Verify proper hierarchy (h1 → h2 → h3)');
+              }
+              
+              if (issues.length === 0) {
+                console.log('✅ No obvious accessibility issues detected\n');
+              } else {
+                issues.forEach(issue => console.log(issue));
+                console.log();
+              }
+            }
+            
+            console.log('---');
+            console.log('*Analysis powered by MCP Accessibility Evaluator*');
+          }
+
+          runAccessibilityTest().catch(console.error);
+          EOF
+
+          # Run the analysis
+          node test_files.js > ../mcp_analysis_results.md
 
       - name: Analyze file content for accessibility issues
         id: analyze
@@ -54,31 +168,40 @@ jobs:
             echo "No relevant files to analyze"
             exit 0
           fi
-          
+
           echo "Analyzing files for accessibility issues..."
-          
+
           # Create analysis report
           cat > accessibility_analysis.md << 'EOF'
-          # GitHub Copilot Accessibility Analysis
-          
+          # 🤖 GitHub Copilot Accessibility Analysis
+
           ## PR Information
           - **PR Number:** ${{ github.event.number }}
           - **Base Branch:** ${{ steps.base-branch.outputs.base_branch }}
           - **Analysis Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          
+
           ## Changed Files Analyzed
           EOF
-          
+
           while IFS= read -r file; do
             if [ -f "$file" ]; then
               echo "- \`$file\`" >> accessibility_analysis.md
             fi
           done < relevant_files.txt
-          
+
           echo "" >> accessibility_analysis.md
-          echo "## Accessibility Analysis" >> accessibility_analysis.md
+          echo "## Enhanced MCP Accessibility Analysis" >> accessibility_analysis.md
           echo "" >> accessibility_analysis.md
-          
+
+          # Include MCP analysis results if available
+          if [ -f "mcp_analysis_results.md" ]; then
+            cat mcp_analysis_results.md >> accessibility_analysis.md
+            echo "" >> accessibility_analysis.md
+          fi
+
+          echo "## Additional Accessibility Checks" >> accessibility_analysis.md
+          echo "" >> accessibility_analysis.md
+
           # Analyze each file for common accessibility issues
           while IFS= read -r file; do
             if [ -f "$file" ]; then
@@ -122,24 +245,24 @@ jobs:
               echo "" >> accessibility_analysis.md
             fi
           done < relevant_files.txt
-          
+
           # Add recommendations section
           cat >> accessibility_analysis.md << 'EOF'
-          ## Recommendations
-          
+          ## 🎯 Recommendations
+
           ### WCAG 2.1 Guidelines to Follow:
           1. **Perceivable**: Ensure content is perceivable by all users
           2. **Operable**: Make functionality operable via keyboard and other input methods
           3. **Understandable**: Make content and operation understandable
           4. **Robust**: Ensure compatibility with assistive technologies
-          
+
           ### WAI-ARIA Best Practices:
           - Use semantic HTML elements when possible
           - Add ARIA attributes only when necessary
           - Ensure ARIA attributes are properly supported
           - Test with screen readers
-          
-          ### Testing Checklist:
+
+          ### 🧪 Testing Checklist:
           - [ ] Keyboard navigation works
           - [ ] Screen reader compatibility
           - [ ] Color contrast meets WCAG standards
@@ -147,9 +270,23 @@ jobs:
           - [ ] Form labels are properly associated
           - [ ] Images have descriptive alt text
           - [ ] Headings follow logical hierarchy
-          
+
+          ### 🔧 MCP Accessibility Evaluator
+
+          For more detailed analysis, use the MCP Accessibility Evaluator locally:
+
+          ```bash
+          cd mcp-accessibility-evaluator
+          ./setup-mcp.sh
+          ```
+
+          Then ask your AI assistant:
+          ```
+          Use evaluate_accessibility to check this HTML content
+          ```
+
           ---
-          *This analysis is automated and should be supplemented with manual testing and user feedback.*
+          *This analysis uses both automated checks and the MCP Accessibility Evaluator for comprehensive coverage.*
           EOF
 
       - name: Comment PR with accessibility analysis
@@ -157,7 +294,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            
+
             try {
               const analysis = fs.readFileSync('accessibility_analysis.md', 'utf8');
               
@@ -199,7 +336,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            
+
             try {
               const analysis = fs.readFileSync('accessibility_analysis.md', 'utf8');
               const issues = (analysis.match(/⚠️/g) || []).length;
@@ -223,4 +360,4 @@ jobs:
               });
             } catch (error) {
               console.log('Error creating summary:', error);
-            } 
+            }

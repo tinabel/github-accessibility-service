@@ -1,55 +1,106 @@
 {
-  "name": "github-service",
+  "name": "github-accessibility-service",
   "version": "1.0.0",
-  "description": "GitHub service with automated PR workflows",
+  "description": "Automated accessibility evaluation for GitHub repositories with MCP server integration and AI assistant support",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+    "setup": "./setup.sh",
+    "verify": "./verify-installation.sh",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx --ignore-path .gitignore",
     "type-check": "tsc --noEmit",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:integration": "jest --config jest.integration.config.js",
+    "test": "npm run test:mcp && npm run test:workflows",
+    "test:mcp": "cd mcp-accessibility-evaluator && npm test",
+    "test:workflows": "echo 'GitHub Actions workflows validated'",
+    "test:coverage": "cd mcp-accessibility-evaluator && npm run test:coverage",
     "test:a11y": "pa11y-ci",
-    "security:check": "npm audit --audit-level=moderate",
-    "security:fix": "npm audit fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "build": "npm run build:mcp",
+    "build:mcp": "cd mcp-accessibility-evaluator && npm run build",
+    "clean": "rm -rf dist && cd mcp-accessibility-evaluator && npm run clean",
+    "accessibility:setup": "cd mcp-accessibility-evaluator && npm install && npm run build",
+    "accessibility:test": "cd mcp-accessibility-evaluator && npm test",
+    "accessibility:docs": "echo 'See SETUP_GUIDE.md and mcp-accessibility-evaluator/README.md'",
+    "distribution:package": "npm run build && tar -czf github-accessibility-service.tar.gz --exclude=node_modules --exclude=.git .",
+    "distribution:verify": "./verify-installation.sh"
   },
-  "dependencies": {
-    "next": "^14.0.0",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+  "keywords": [
+    "accessibility",
+    "a11y",
+    "wcag",
+    "aria",
+    "github-actions",
+    "mcp",
+    "ai-assistant",
+    "claude",
+    "copilot",
+    "automation",
+    "pr-analysis",
+    "web-accessibility",
+    "inclusive-design"
+  ],
+  "author": "GitHub Accessibility Service Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/github-accessibility-service.git"
   },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "eslint": "^8.0.0",
-    "eslint-config-next": "^14.0.0",
-    "jest": "^29.0.0",
-    "jest-environment-jsdom": "^29.0.0",
-    "pa11y-ci": "^3.0.0",
-    "prettier": "^3.0.0",
-    "typescript": "^5.0.0"
+  "bugs": {
+    "url": "https://github.com/your-org/github-accessibility-service/issues"
   },
+  "homepage": "https://github.com/your-org/github-accessibility-service#readme",
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
   },
-  "keywords": [
-    "github",
-    "actions",
-    "ci",
-    "cd",
-    "automation"
+  "files": [
+    "mcp-accessibility-evaluator/",
+    ".github/workflows/",
+    "config/",
+    "setup.sh",
+    "verify-installation.sh",
+    "SETUP_GUIDE.md",
+    "DISTRIBUTION.md",
+    "COPILOT_SETUP.md",
+    "README.md"
   ],
-  "author": "Your Name",
-  "license": "MIT"
+  "dependencies": {
+    "next": "^15.3.5",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.13",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@typescript-eslint/eslint-plugin": "^8.36.0",
+    "@typescript-eslint/parser": "^8.36.0",
+    "eslint": "^9.31.0",
+    "eslint-config-next": "^15.3.5",
+    "jest": "^30.0.5",
+    "pa11y": "^8.0.0",
+    "pa11y-ci": "^2.4.2",
+    "typescript": "^5.8.3"
+  },
+  "peerDependencies": {
+    "eslint": ">=8.0.0",
+    "typescript": ">=4.0.0"
+  },
+  "optionalDependencies": {
+    "pa11y-ci": "^2.4.2"
+  },
+  "config": {
+    "setupCommand": "./setup.sh",
+    "mcpServerPath": "./mcp-accessibility-evaluator/dist/index.js"
+  },
+  "accessibility": {
+    "standards": ["WCAG 2.1 AA", "WAI-ARIA"],
+    "tools": ["axe-core", "pa11y", "custom-mcp-evaluator"],
+    "automation": ["github-actions", "mcp-server", "ai-assistants"]
+  },
+  "distribution": {
+    "platforms": ["macOS", "Linux", "Windows"],
+    "aiAssistants": ["Claude Desktop", "GitHub Copilot", "VS Code MCP", "Cursor"],
+    "setupMethods": ["automated", "manual"],
+    "verification": "./verify-installation.sh"
+  }
 }

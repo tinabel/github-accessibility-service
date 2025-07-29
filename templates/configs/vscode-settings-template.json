@@ -1,0 +1,36 @@
+{
+  "mcp.servers": {
+    "accessibility-evaluator": {
+      "command": "node",
+      "args": ["{{MCP_SERVER_PATH}}"],
+      "description": "GitHub Accessibility Service - MCP Evaluator",
+      "enabled": true
+    }
+  },
+  "mcp.enableLogging": true,
+  "mcp.logLevel": "info"
+}
+
+/*
+Template Instructions for VS Code/Cursor MCP Integration:
+
+1. Install the MCP extension from the VS Code marketplace
+2. Replace {{MCP_SERVER_PATH}} with the absolute path to your MCP server
+3. Add this configuration to your VS Code settings.json:
+   - Open Command Palette (Cmd/Ctrl + Shift + P)
+   - Type "Preferences: Open Settings (JSON)"
+   - Add the above configuration
+
+Example paths:
+- macOS/Linux: "/Users/username/project/mcp-accessibility-evaluator/dist/index.js"
+- Windows: "C:\\Users\\username\\project\\mcp-accessibility-evaluator\\dist\\index.js"
+
+Available Tools:
+- evaluate_accessibility: Comprehensive HTML accessibility evaluation
+- check_wcag_compliance: WCAG 2.1 compliance analysis
+- validate_aria: ARIA usage validation
+- fetch_accessibility_docs: Live documentation retrieval
+
+Usage Example:
+Ask your AI assistant: "Use evaluate_accessibility to check this HTML: <html>...</html>"
+*/

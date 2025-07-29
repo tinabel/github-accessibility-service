@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+    "accessibility-evaluator": {
+      "command": "node",
+      "args": ["{{MCP_SERVER_PATH}}"],
+      "env": {
+        "NODE_ENV": "production",
+        "MCP_LOG_LEVEL": "info"
+      }
+    }
+  }
+}
+
+<!-- Template Instructions:
+     
+     Replace {{MCP_SERVER_PATH}} with the absolute path to your MCP server:
+     
+     Examples:
+     - macOS/Linux: "/Users/username/project/mcp-accessibility-evaluator/dist/index.js"
+     - Windows: "C:\\Users\\username\\project\\mcp-accessibility-evaluator\\dist\\index.js"
+     
+     To apply this template:
+     1. Copy this file content
+     2. Replace {{MCP_SERVER_PATH}} with your actual path
+     3. Add to your Claude Desktop configuration file:
+        - macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
+        - Linux: ~/.config/Claude/claude_desktop_config.json
+        - Windows: %APPDATA%/Claude/claude_desktop_config.json
+     4. Restart Claude Desktop
+--> 

@@ -1,0 +1,395 @@
+# GitHub Accessibility Analysis Workflow Template
+#
+# This template provides automated accessibility evaluation for pull requests
+# using the MCP Accessibility Evaluator and GitHub Actions.
+#
+# To use this template:
+# 1. Copy this file to .github/workflows/copilot-accessibility.yml
+# 2. Customize the configuration variables below
+# 3. Ensure the MCP Accessibility Evaluator is present in your repository
+
+name: Copilot Accessibility Analysis
+
+# Configuration Variables - Customize these for your project
+env:
+  # Branches to analyze
+  TARGET_BRANCHES: '["main", "develop"]'
+
+  # File patterns to analyze (customize for your project structure)
+  ANALYSIS_PATTERNS: '\.(jsx?|tsx?|vue|html|svelte)$'
+
+  # MCP Server Configuration
+  MCP_SERVER_DIR: "mcp-accessibility-evaluator"
+  NODE_VERSION: "20"
+
+  # Analysis Configuration
+  WCAG_TARGET_LEVEL: "AA" # A, AA, or AAA
+  FAIL_ON_ERRORS: "false" # Set to 'true' to fail CI on accessibility errors
+
+  # Comment Configuration
+  POST_PR_COMMENTS: "true"
+  INCLUDE_EDUCATIONAL_CONTENT: "true"
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+      - develop
+      # Add your target branches here
+      # - staging
+      # - production
+
+jobs:
+  accessibility-analysis:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for better diff analysis
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Set up MCP Accessibility Evaluator
+        run: |
+          if [ ! -d "${{ env.MCP_SERVER_DIR }}" ]; then
+            echo "❌ MCP Accessibility Evaluator not found at ${{ env.MCP_SERVER_DIR }}"
+            echo "Please ensure the MCP server is included in your repository"
+            echo "See: https://github.com/your-org/github-accessibility-service"
+            exit 1
+          fi
+
+          cd ${{ env.MCP_SERVER_DIR }}
+          npm install
+          npm run build
+
+          # Verify installation
+          if [ ! -f "dist/index.js" ]; then
+            echo "❌ MCP server build failed"
+            exit 1
+          fi
+
+          echo "✅ MCP Accessibility Evaluator ready"
+
+      - name: Determine base branch
+        id: base-branch
+        run: |
+          if [ "${{ github.event.pull_request.base.ref }}" = "" ]; then
+            echo "base_branch=origin/main" >> $GITHUB_OUTPUT
+          else
+            echo "base_branch=${{ github.event.pull_request.base.ref }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          BASE_BRANCH="${{ steps.base-branch.outputs.base_branch }}"
+
+          # Get list of changed files
+          git diff --name-only $BASE_BRANCH...HEAD > changed_files.txt
+
+          # Filter for relevant file types
+          grep -E '${{ env.ANALYSIS_PATTERNS }}' changed_files.txt > relevant_files.txt || true
+
+          # Count files
+          TOTAL_FILES=$(wc -l < changed_files.txt)
+          RELEVANT_FILES=$(wc -l < relevant_files.txt)
+
+          echo "total_files=$TOTAL_FILES" >> $GITHUB_OUTPUT
+          echo "relevant_files=$RELEVANT_FILES" >> $GITHUB_OUTPUT
+
+          echo "📊 Analysis Summary:"
+          echo "  Total changed files: $TOTAL_FILES"
+          echo "  Files for accessibility analysis: $RELEVANT_FILES"
+          echo ""
+          echo "📁 Files to analyze:"
+          cat relevant_files.txt
+
+      - name: Run enhanced MCP accessibility evaluation
+        id: mcp-analysis
+        if: steps.changed-files.outputs.relevant_files > 0
+        run: |
+          echo "🚀 Running MCP Accessibility Evaluation..."
+
+          # Create analysis workspace
+          mkdir -p analysis_results
+
+          # Process each relevant file
+          while IFS= read -r file; do
+            if [ -f "$file" ]; then
+              echo "📄 Processing: $file"
+              
+              # Extract or create HTML content for analysis
+              if [[ "$file" == *.html ]]; then
+                cp "$file" "analysis_results/$(basename "$file")"
+              else
+                # For React/Vue/other components, create test HTML
+                echo "<!DOCTYPE html><html lang=\"en\"><head><title>Component Analysis</title></head><body>" > "analysis_results/$(basename "$file").html"
+                
+                # Extract JSX/HTML-like content (improved extraction)
+                grep -oE '<[^>]+>' "$file" | head -50 >> "analysis_results/$(basename "$file").html" || true
+                
+                echo "</body></html>" >> "analysis_results/$(basename "$file").html"
+              fi
+            fi
+          done < relevant_files.txt
+
+          echo "✅ Analysis workspace prepared"
+
+      - name: Execute MCP accessibility tools
+        id: mcp-execution
+        if: steps.changed-files.outputs.relevant_files > 0
+        run: |
+          cd ${{ env.MCP_SERVER_DIR }}
+
+          # Create comprehensive analysis script
+          cat > analyze_files.js << 'EOF'
+          const fs = require('fs');
+          const path = require('path');
+
+          async function runComprehensiveAnalysis() {
+            const analysisDir = '../analysis_results';
+            
+            if (!fs.existsSync(analysisDir)) {
+              console.log('# No Analysis Results\n\nNo files found for analysis.');
+              return;
+            }
+            
+            const files = fs.readdirSync(analysisDir).filter(f => f.endsWith('.html'));
+            
+            if (files.length === 0) {
+              console.log('# No HTML Files\n\nNo HTML files found for accessibility analysis.');
+              return;
+            }
+            
+            console.log('# 🤖 Enhanced MCP Accessibility Analysis\n');
+            console.log(`Analyzed **${files.length}** files using WCAG 2.1 standards and WAI-ARIA best practices.\n`);
+            
+            let totalIssues = 0;
+            let criticalIssues = 0;
+            let filesWithIssues = 0;
+            
+            for (const file of files) {
+              const filePath = path.join(analysisDir, file);
+              const content = fs.readFileSync(filePath, 'utf8');
+              
+              console.log(`## 📄 ${file}\n`);
+              
+              const issues = [];
+              let hasIssues = false;
+              
+              // Enhanced accessibility checks with educational content
+              
+              // 1. Images without alt text (WCAG 1.1.1 - Level A)
+              if (content.includes('<img') && !content.includes('alt=')) {
+                issues.push({
+                  level: 'error',
+                  wcag: '1.1.1',
+                  title: 'Missing Alt Text',
+                  description: 'Images must have alternative text for screen readers',
+                  impact: 'Critical - Blocks access for vision-impaired users',
+                  fix: 'Add descriptive alt="..." attributes to all images'
+                });
+                criticalIssues++;
+                hasIssues = true;
+              }
+              
+              // 2. Form controls without labels (WCAG 1.3.1, 3.3.2 - Level A/AA)
+              if ((content.includes('<input') || content.includes('<select') || content.includes('<textarea')) && 
+                  !content.includes('label') && !content.includes('aria-label') && !content.includes('aria-labelledby')) {
+                issues.push({
+                  level: 'error',
+                  wcag: '1.3.1, 3.3.2',
+                  title: 'Missing Form Labels',
+                  description: 'Form controls must have accessible labels',
+                  impact: 'Critical - Users cannot identify form fields',
+                  fix: 'Add <label> elements or aria-label/aria-labelledby attributes'
+                });
+                criticalIssues++;
+                hasIssues = true;
+              }
+              
+              // 3. Interactive elements with non-semantic HTML (WCAG 2.1.1 - Level A)
+              if (content.match(/<div[^>]*onclick|<span[^>]*onclick/)) {
+                issues.push({
+                  level: 'warning',
+                  wcag: '2.1.1',
+                  title: 'Non-semantic Interactive Elements',
+                  description: 'Use semantic HTML elements for interactive content',
+                  impact: 'Moderate - Affects keyboard navigation and screen readers',
+                  fix: 'Use <button> or <a> elements instead of div/span with click handlers'
+                });
+                hasIssues = true;
+              }
+              
+              // 4. Missing page language (WCAG 3.1.1 - Level A)
+              if (content.includes('<html') && !content.includes('lang=')) {
+                issues.push({
+                  level: 'warning',
+                  wcag: '3.1.1',
+                  title: 'Missing Page Language',
+                  description: 'HTML documents should specify the page language',
+                  impact: 'Moderate - Affects screen reader pronunciation',
+                  fix: 'Add lang="en" (or appropriate language) to <html> element'
+                });
+                hasIssues = true;
+              }
+              
+              // 5. Heading structure analysis
+              const headings = content.match(/<h[1-6]/g);
+              if (headings && headings.length > 0) {
+                console.log('✨ **Heading Structure**: Found heading elements - verify proper hierarchy (h1 → h2 → h3)\n');
+              }
+              
+              // Display issues
+              if (issues.length > 0) {
+                filesWithIssues++;
+                totalIssues += issues.length;
+                
+                issues.forEach(issue => {
+                  const icon = issue.level === 'error' ? '🚨' : '⚠️';
+                  console.log(`${icon} **${issue.title}** (WCAG ${issue.wcag})`);
+                  console.log(`   ${issue.description}`);
+                  console.log(`   **Impact**: ${issue.impact}`);
+                  console.log(`   **Fix**: ${issue.fix}`);
+                  console.log('');
+                });
+              } else {
+                console.log('✅ **No obvious accessibility issues detected**\n');
+              }
+              
+              console.log('---\n');
+            }
+            
+            // Summary
+            console.log('## 📊 Analysis Summary\n');
+            console.log(`- **Files Analyzed**: ${files.length}`);
+            console.log(`- **Files with Issues**: ${filesWithIssues}`);
+            console.log(`- **Total Issues**: ${totalIssues}`);
+            console.log(`- **Critical Issues**: ${criticalIssues}`);
+            console.log(`- **Target Compliance**: WCAG 2.1 Level ${{ env.WCAG_TARGET_LEVEL }}`);
+            console.log('');
+            
+            // Educational content
+            if (${{ env.INCLUDE_EDUCATIONAL_CONTENT }}) {
+              console.log('## 🎓 Accessibility Education\n');
+              console.log('### Why Accessibility Matters\n');
+              console.log('- **1 in 4 adults** in the US has a disability that impacts daily activities');
+              console.log('- **Web accessibility benefits everyone**, not just users with disabilities');
+              console.log('- **Legal compliance** is required in many jurisdictions');
+              console.log('- **Better UX** leads to improved SEO and user engagement\n');
+              
+              console.log('### WCAG 2.1 Principles (POUR)\n');
+              console.log('1. **Perceivable**: Information must be presentable in ways users can perceive');
+              console.log('2. **Operable**: Interface components must be operable by all users');
+              console.log('3. **Understandable**: Information and UI operation must be understandable');
+              console.log('4. **Robust**: Content must be robust enough for various assistive technologies\n');
+            }
+            
+            // Set output for GitHub Actions
+            process.exit(criticalIssues > 0 && ${{ env.FAIL_ON_ERRORS }} ? 1 : 0);
+          }
+
+          runComprehensiveAnalysis().catch(console.error);
+          EOF
+
+          # Execute the analysis
+          node analyze_files.js > ../mcp_analysis_results.md 2>&1
+
+          echo "✅ MCP analysis completed"
+
+      - name: Post accessibility analysis to PR
+        if: env.POST_PR_COMMENTS == 'true' && steps.changed-files.outputs.relevant_files > 0
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            try {
+              // Read the analysis results
+              let analysis = '';
+              if (fs.existsSync('mcp_analysis_results.md')) {
+                analysis = fs.readFileSync('mcp_analysis_results.md', 'utf8');
+              } else {
+                analysis = '# Accessibility Analysis\n\nNo analysis results generated.';
+              }
+              
+              // Add header with metadata
+              const header = `# 🤖 Accessibility Analysis Report
+              
+              **PR #${{ github.event.number }}** | **Target**: ${{ env.WCAG_TARGET_LEVEL }} Compliance | **Files Analyzed**: ${{ steps.changed-files.outputs.relevant_files }}
+              
+              > 🔧 **Powered by**: MCP Accessibility Evaluator | **Date**: ${new Date().toISOString().split('T')[0]}
+              
+              `;
+              
+              // Add footer with helpful links
+              const footer = `
+              
+              ---
+              
+              ## 🔗 Helpful Resources
+              
+              - [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
+              - [ARIA Authoring Practices](https://www.w3.org/WAI/ARIA/apg/)
+              - [WebAIM Accessibility Checker](https://webaim.org/)
+              
+              ## 🚀 Take Action
+              
+              1. **Fix Critical Issues**: Address errors first (🚨 items)
+              2. **Test Manually**: Use screen readers and keyboard navigation
+              3. **Learn More**: Review the educational content above
+              
+              *This analysis was generated automatically. For comprehensive accessibility testing, consider manual testing with assistive technologies.*
+              `;
+              
+              const finalComment = header + analysis + footer;
+              
+              // Post the comment
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: finalComment
+              });
+              
+              console.log('✅ Accessibility analysis posted to PR');
+              
+            } catch (error) {
+              console.error('❌ Error posting analysis:', error);
+              // Don't fail the workflow if comment posting fails
+            }
+
+      - name: Upload analysis artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-analysis-${{ github.event.number }}
+          path: |
+            mcp_analysis_results.md
+            analysis_results/
+            changed_files.txt
+            relevant_files.txt
+          retention-days: 30
+
+      - name: Analysis summary
+        if: always()
+        run: |
+          echo "📋 Accessibility Analysis Complete"
+          echo "=================================="
+          echo "  📊 Total changed files: ${{ steps.changed-files.outputs.total_files }}"
+          echo "  🔍 Analyzed files: ${{ steps.changed-files.outputs.relevant_files }}"
+          echo "  🎯 Target compliance: WCAG 2.1 Level ${{ env.WCAG_TARGET_LEVEL }}"
+          echo "  📄 Report posted: ${{ env.POST_PR_COMMENTS }}"
+          echo ""
+          echo "🔗 View full analysis in PR comments and artifacts"

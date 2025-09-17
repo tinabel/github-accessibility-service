@@ -1,3 +1,6 @@
 [submodule "mcp-accessibility-evaluator"]
 	path = mcp-accessibility-evaluator
 	url = https://github.com/tinabel/mcp-accessibility-evaluator
+[submodule "accessibility-scraper"]
+	path = accessibility-scraper
+	url = https://github.com/tinabel/accessibility-scraper

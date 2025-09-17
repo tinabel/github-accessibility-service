@@ -12,6 +12,8 @@ This repository provides a complete accessibility evaluation solution that integ
 
 ## ✨ Key Features
 
+- **🌉 Integrated Analysis**: Combines web scraping + accessibility evaluation for comprehensive analysis
+- **🔄 Live Documentation**: Automatically fetches latest WCAG guidelines from W3C
 - **🤖 Automated PR Analysis**: GitHub Actions workflow that analyzes every pull request
 - **🧠 AI Assistant Integration**: Works with Claude Desktop, VS Code, Cursor, and other MCP-compatible tools
 - **📚 Educational Feedback**: Not just issue detection—learn why accessibility matters
@@ -21,21 +23,35 @@ This repository provides a complete accessibility evaluation solution that integ
 
 ## 🚀 Quick Start
 
-### Option 1: Automated Setup (Recommended)
+### Option 1: Integrated Setup (Recommended)
+
+```bash
+# Clone the repository with submodules
+git clone --recurse-submodules https://github.com/your-org/github-accessibility-service.git
+cd github-accessibility-service
+
+# Setup integration between components
+./setup-integration.sh
+
+# Verify installation
+./verify-installation.sh
+```
+
+### Option 2: Individual Component Setup
 
 ```bash
 # Clone the repository
 git clone https://github.com/your-org/github-accessibility-service.git
 cd github-accessibility-service
 
-# One-command setup
-./setup.sh
+# Initialize submodules
+git submodule update --init --recursive
 
-# Verify installation
-./verify-installation.sh
+# Setup individual components
+./setup.sh
 ```
 
-### Option 2: Download Release Package
+### Option 3: Download Release Package
 
 ```bash
 # Download latest release
@@ -50,6 +66,12 @@ cd github-accessibility-service
 
 ## 🛠️ What Gets Set Up
 
+### 🌉 Integration Bridge
+- **Live WCAG Documentation**: Automatically fetches latest guidelines from W3C
+- **Enhanced Evaluation**: Uses scraped data for more accurate accessibility analysis
+- **Unified Configuration**: Single config system for all components
+- **Comprehensive Analysis**: Combines scraping + evaluation for complete reports
+
 ### GitHub Actions Integration
 - **Automated PR analysis** with accessibility evaluation
 - **Educational comments** on pull requests with detailed explanations
@@ -61,6 +83,12 @@ cd github-accessibility-service
 - **4 powerful tools**: `evaluate_accessibility`, `check_wcag_compliance`, `validate_aria`, `fetch_accessibility_docs`
 - **Educational explanations** for every accessibility issue found
 - **Live documentation** from W3C and MDN standards
+
+### Accessibility Scraper
+- **WCAG Website Mapping**: Discovers and maps W3C accessibility resources
+- **Content Extraction**: Scrapes guidelines, success criteria, and techniques
+- **Structured Data**: Converts web content into machine-readable format
+- **Respectful Scraping**: Built-in delays and rate limiting
 
 ### AI Assistant Support
 - **Claude Desktop**: Full MCP integration with enhanced explanations
@@ -97,6 +125,21 @@ When you create a PR with accessibility issues, you'll get feedback like this:
 
 ## 🧪 Testing Your Setup
 
+### Test Integration Bridge
+```bash
+# Check integration status
+npm run integration:status
+
+# Update WCAG documentation
+npm run integration:update-docs
+
+# Analyze test HTML
+npm run integration:analyze --html '<html><body><img src="logo.png"><h3>Welcome</h3><form><input type="email" placeholder="Email"></form></body></html>'
+
+# Run comprehensive demonstration
+node example-integration.js
+```
+
 ### Test GitHub Actions
 Create a test PR with accessibility issues:
 
@@ -116,11 +159,24 @@ Use evaluate_accessibility to check this HTML:
 <html><body><img src="logo.png"><button><i class="icon"></i></button></body></html>
 ```
 
+### Test Individual Components
+```bash
+# Test accessibility scraper
+npm run scraper:map "https://www.w3.org/WAI/WCAG21/" -- --limit 5
+npm run scraper:scrape "https://www.w3.org/WAI/WCAG21/quickref/"
+
+# Test MCP evaluator
+cd mcp-accessibility-evaluator
+npm test
+```
+
 ## 📚 Documentation
 
+- **[Integration Guide](INTEGRATION_GUIDE.md)**: Complete guide to the integrated system
 - **[Setup Guide](SETUP_GUIDE.md)**: Detailed installation and configuration
 - **[Distribution Guide](docs/distribution/DISTRIBUTOR_GUIDE.md)**: For organizations and teams
 - **[MCP Evaluator Documentation](mcp-accessibility-evaluator/README.md)**: Technical details and API
+- **[Accessibility Scraper Documentation](accessibility-scraper/README.md)**: Web scraping capabilities
 - **[GitHub Copilot Setup](COPILOT_SETUP.md)**: Advanced GitHub integration
 
 ## 🏢 For Organizations
